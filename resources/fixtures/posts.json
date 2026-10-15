@@ -1,0 +1,18 @@
+{
+  "existing_post_id": 1,
+  "missing_post_id": 101,
+  "create": {
+    "title": "API test post",
+    "body": "Created by the Robot Framework API test suite.",
+    "userId": 1
+  },
+  "replace": {
+    "id": 1,
+    "title": "Replaced API test post",
+    "body": "Replaced by the Robot Framework API test suite.",
+    "userId": 1
+  },
+  "patch": {
+    "title": "Partially updated API test post"
+  }
+}
