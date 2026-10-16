@@ -17,6 +17,12 @@ output.xml
 .env.*
 !.env.example
 env.yml
+secrets/
+credentials/
+secrets.*
+credentials.*
+*.pem
+*.key
 
 # Editors and operating systems
 .vscode/

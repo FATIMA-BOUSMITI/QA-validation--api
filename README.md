@@ -1,122 +1,178 @@
-# JSONPlaceholder API Automation Tests
+# Robot Framework API Automation Testing
 
-Automated REST API tests built with Robot Framework and RequestsLibrary. The
-suite targets [JSONPlaceholder](https://jsonplaceholder.typicode.com), a public
-test API that does not require credentials.
+API test automation for [JSONPlaceholder](https://jsonplaceholder.typicode.com),
+a public REST API used for testing and prototyping. The project uses Robot
+Framework and RequestsLibrary to exercise resource retrieval and simulated
+write operations, and validates collection responses against JSON Schemas.
 
-This project is an adaptation of
-[Thiago Nogueira dos Santos' Robot-API-Tests repository](https://github.com/thinogueiras/Robot-API-Tests),
-originally created to test the Barriga REST API. It retains the original
-project's MIT license; see [LICENSE](LICENSE). The Barriga-specific tests and
-support data have been replaced with JSONPlaceholder scenarios.
+This repository is an adaptation of
+[Thiago Nogueira dos Santos' Robot-API-Tests](https://github.com/thinogueiras/Robot-API-Tests),
+which originally tested the Barriga REST API. The API-specific resources, test
+scenarios, fixtures, schemas, and CI workflow have been adapted for
+JSONPlaceholder. The original MIT license and copyright notice are retained in
+[LICENSE](LICENSE).
 
-## Requirements
+## Project Overview
 
-- Python 3.11
-- Internet access to `jsonplaceholder.typicode.com`
+The suite verifies documented JSONPlaceholder response behavior without API
+credentials. It covers HTTP status codes and response data for `posts`, `users`,
+and `comments`, plus schema checks for all three collection endpoints.
 
-## Install on Windows
+JSONPlaceholder simulates write operations rather than persisting changes.
+POST, PUT, PATCH, and DELETE tests therefore validate the responses returned by
+the API; they do not expect later requests to observe modified data.
 
-Run these commands from the project directory in PowerShell:
+## Tech Stack
+
+- Python 3.11 (the version configured for CI)
+- Robot Framework 7
+- RequestsLibrary for HTTP requests
+- JSONLibrary and JSON Schema for response validation
+- GitHub Actions for continuous integration
+
+Dependencies are pinned in [requirements.txt](requirements.txt). No API keys or
+GitHub secrets are needed.
+
+## Test Architecture
+
+```text
+.
+├── .github/workflows/continuous-testing.yml
+├── resources/
+│   ├── base.resource          # API URL and reusable HTTP session
+│   ├── services.resource      # Generic GET, POST, PUT, PATCH, DELETE keywords
+│   ├── helpers.resource       # Fixture loading and JSON field helpers
+│   ├── fixtures/              # Request payloads and resource IDs
+│   └── schemas/               # Collection response JSON Schemas
+├── tests/
+│   ├── posts.robot
+│   ├── users.robot
+│   ├── comments.robot
+│   └── schema.robot
+├── requirements.txt
+└── README.md
+```
+
+Service keywords issue requests with `expected_status=any`. Test cases own the
+status and response assertions, keeping HTTP operations separate from
+verification. Fixtures hold test data outside the test logic.
+
+## API Endpoints Tested
+
+| Resource | Endpoints |
+| --- | --- |
+| Posts | `GET /posts`, `GET /posts/{id}`, `POST /posts`, `PUT /posts/{id}`, `PATCH /posts/{id}`, `DELETE /posts/{id}` |
+| Users | `GET /users`, `GET /users/{id}` |
+| Comments | `GET /comments`, `GET /comments/{id}` |
+
+For each resource, a GET by a known missing ID also checks the not-found
+response. Collection GETs for posts, users, and comments are validated against
+their respective JSON Schemas.
+
+## Test Scenarios
+
+- Retrieve post, user, and comment collections and individual resources.
+- Verify a not-found response for a nonexistent resource ID.
+- Create, replace, partially update, and delete a post; assert status and
+  response content.
+- Validate collection JSON structures against the posts, users, and comments
+  schemas.
+- Use `smoke`, `regression`, `positive`, `negative`, and `schema` tags to select
+  relevant scenarios.
+
+## Test Execution
+
+### Windows PowerShell
+
+From the project root, check Python, create and activate a virtual
+environment, then install the pinned dependencies:
 
 ```powershell
-py -3.11 -m venv .venv
+python --version
+python -m venv .venv
 .\.venv\Scripts\Activate.ps1
 python -m pip install --upgrade pip
 python -m pip install -r requirements.txt
 ```
 
-If PowerShell blocks activation, either adjust the execution policy for your
-user or run the project's executables directly:
+Use Python 3.11 locally if you want to match CI. To run tests without
+activating the environment:
 
 ```powershell
-.\.venv\Scripts\python.exe -m pip install -r requirements.txt
 .\.venv\Scripts\robot.exe --outputdir reports tests
 ```
 
-## Run the tests
-
-Run the full suite and generate `output.xml`, `log.html`, and `report.html`
-under `reports\`:
-
-```powershell
-robot --outputdir reports tests
-```
-
-Run a specific suite or tag:
+Run one suite or select by tag:
 
 ```powershell
 robot --outputdir reports tests\posts.robot
 robot --outputdir reports --include smoke tests
 ```
 
-Robot Framework returns a non-zero exit code when tests fail. The reports are
-local generated files and are excluded from Git.
+### Linux and macOS
 
-## Project structure
-
-```text
-.
-├── .github\workflows\continuous-testing.yml
-├── resources\
-│   ├── base.resource
-│   ├── services.resource
-│   ├── helpers.resource
-│   ├── fixtures\              # Request data and existing/missing resource IDs
-│   └── schemas\               # JSON Schemas for posts, users, and comments
-├── tests\
-│   ├── posts.robot            # GET, POST, PUT, PATCH, DELETE and negative GET
-│   ├── users.robot            # Collection, item, and not-found GETs
-│   ├── comments.robot         # Collection, item, and not-found GETs
-│   └── schema.robot           # Response schema validation
-├── requirements.txt
-└── README.md
+```bash
+python3.11 -m venv .venv
+source .venv/bin/activate
+python -m pip install -r requirements.txt
+robot --outputdir reports tests
 ```
 
-The base resource creates a reusable HTTP session. Service keywords perform
-HTTP operations and accept any status code so the test cases can assert status
-and response content themselves. Helpers load JSON fixtures and extract JSON
-fields. Schemas and fixtures are kept separate from test cases.
+Robot Framework returns a non-zero exit code when tests fail.
 
-## Test coverage
+## GitHub Actions CI Pipeline
 
-- Posts: list, fetch by ID, fetch a nonexistent ID, create, replace, partially
-  update, and delete.
-- Users and comments: list, fetch by ID, and fetch a nonexistent ID.
-- JSON Schema validation for the posts, users, and comments collections.
-- Tests use `smoke`, `regression`, `positive`, `negative`, and `schema` tags.
+The workflow at
+[.github/workflows/continuous-testing.yml](.github/workflows/continuous-testing.yml)
+runs on pushes and pull requests targeting `main`. It uses `ubuntu-latest`,
+sets up Python 3.11, installs `requirements.txt`, and executes all test suites.
+A test failure fails the workflow job.
 
-JSONPlaceholder simulates write operations: POST, PUT, PATCH, and DELETE return
-responses, but changes are not persisted to the API's collections. Accordingly,
-the write tests verify the documented response status and representation; they
-do not expect a later GET to show the changes.
+The setup-python pip cache is enabled and keyed from `requirements.txt`, so the
+cache is refreshed when the dependency manifest changes. This speeds up
+dependency installation without changing the test environment's declared
+dependencies.
 
-## Continuous integration
+## Pip Cache Management
 
-GitHub Actions runs on pushes and pull requests targeting `main`. The workflow
-sets up Python 3.11, installs `requirements.txt`, and runs all Robot suites.
-The test command's exit code fails the job when a test fails. The
-`robot-framework-reports` artifact contains `report.html`, `log.html`, and
-`output.xml` and is uploaded even when the tests fail.
+GitHub Actions caches pip's package download cache using the dependency file as
+the cache key input. There is no committed virtual environment or local
+dependency cache. To update dependencies, edit `requirements.txt`; the CI cache
+will then be refreshed for the new manifest.
 
-To view the reports on GitHub, open the workflow run under **Actions**, then
-download **robot-framework-reports** from the run's artifacts section.
+## Test Reports
 
-## Publish to your GitHub repository
+The workflow writes `report.html`, `log.html`, and `output.xml` under `reports/`.
+It uploads them as the `robot-framework-reports` artifact even if tests fail.
+Open the workflow run on GitHub and download the artifact from its **Artifacts**
+section. Locally generated reports are excluded from Git by `.gitignore`.
 
-This downloaded project folder currently has no `.git` directory. After
-creating an empty repository on GitHub, initialize and connect it from
-PowerShell (replace the URL with your own repository URL):
+## Future Improvements
+
+- Add further endpoint and query-parameter coverage where behavior is
+  documented by JSONPlaceholder.
+- Add negative request-body scenarios without asserting undocumented business
+  rules.
+
+## Credits and License
+
+Adapted from
+[thinogueiras/Robot-API-Tests](https://github.com/thinogueiras/Robot-API-Tests),
+created by Thiago Nogueira dos Santos. The original MIT license and its
+copyright notice are preserved in [LICENSE](LICENSE).
+
+## Publishing This Project
+
+Create a **public, empty** repository named `robot-framework-api-automation`
+under the GitHub account `FATIMA-BOUSMITI`. After reviewing the changes and
+authorizing publication, connect this local branch to the new repository and
+push it:
 
 ```powershell
-git init
-git add .
-git commit -m "Adapt API automation tests to JSONPlaceholder"
-git branch -M main
-git remote add origin https://github.com/<YOUR-USERNAME>/<YOUR-REPOSITORY>.git
+git remote set-url origin https://github.com/FATIMA-BOUSMITI/robot-framework-api-automation.git
+git remote -v
 git push -u origin main
 ```
 
-No API credentials or GitHub secrets are required to run the tests. GitHub
-Actions starts after the first push to `main`; pull requests targeting `main`
-also trigger the workflow.
+The remote change and push are intentionally not performed as part of preparing
+this repository.
