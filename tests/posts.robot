@@ -90,3 +90,20 @@ Delete A Post Returns An Empty JSON Object
 
     Should Be Equal As Integers    ${response.status_code}    200
     Should Be Equal               ${response.json()}    ${{dict()}}
+Create Post Returns Created Resource
+    [Documentation]    Verify POST response for a new post
+    [Tags]    regression    positive    crud
+
+    ${payload}=    Create Dictionary
+    ...    title=My QA Automation Test
+    ...    body=Testing POST with Robot Framework
+    ...    userId=${1}
+
+    ${response}=    Create Resource    posts    ${payload}
+    ${post}=        Set Variable    ${response.json()}
+
+    Should Be Equal As Integers    ${response.status_code}    201
+    Should Be Equal    ${post}[title]    ${payload}[title]
+    Should Be Equal    ${post}[body]     ${payload}[body]
+    Should Be Equal As Integers    ${post}[userId]    1
+    Dictionary Should Contain Key    ${post}    id

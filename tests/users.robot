@@ -8,7 +8,7 @@ Suite Teardown              Delete All Sessions
 
 *** Test Cases ***
 Get All Users Returns The Documented Collection
-    [Tags]                   smoke    regression    positive
+    [Tags]                   smoke    regressi     positive
     ${response}              Get Resource Collection    users
     ${users}                 Set Variable    ${response.json()}
     ${first_user}            Get From List    ${users}    0
@@ -39,3 +39,27 @@ Get A Nonexistent User Returns Not Found
 
     Should Be Equal As Integers    ${response.status_code}    404
     Should Be Equal               ${response.json()}    ${{dict()}}
+Get User With Invalid ID
+    [Documentation]    Verify API behavior when user ID is not numeric
+    [Tags]    regression    negative    invalid-input
+
+    ${response}=    Get Resource By ID    users    abc
+
+    Should Be Equal As Integers    ${response.status_code}    404
+    Should Be Equal    ${response.json()}    ${{dict()}}
+Get User With Negative ID
+    [Documentation]    Verify API behavior with a negative user ID
+    [Tags]    regression    negative    boundary
+
+    ${response}=    Get Resource By ID    users    -1
+
+    Should Be Equal As Integers    ${response.status_code}    404
+    Should Be Equal    ${response.json()}    ${{dict()}}
+Get Unknown Resource Returns 404
+    [Documentation]    Verify behavior for an unknown endpoint
+    [Tags]    regression    negative
+
+    ${response}=    Get Resource Collection    unknownresource
+
+    Should Be Equal As Integers    ${response.status_code}    404
+    
